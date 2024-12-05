@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Henkilökortti sovellus" />
+    
+    <!-- Back/Forward Cache optimointi -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // Suljetaan vanhat WebSocket yhteydet
+        window.addEventListener('pagehide', () => {
+          if (window.location.hostname === 'localhost') {
+            const ws = window.__vite_ws__;
+            if (ws) {
+              ws.close();
+            }
+          }
+        });
+
+        // Hallitaan sivun palautuminen välimuistista
+        window.addEventListener('pageshow', (event) => {
+          if (event.persisted && window.location.hostname === 'localhost') {
+            // Jos sivu ladataan välimuistista (back/forward navigaatio)
+            window.location.reload();
+          }
+        });
+      });
+    </script>
+    
+    <title>Henkilökortti</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
