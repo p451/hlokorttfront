@@ -20,7 +20,7 @@ const PrivacyPolicyManagement: React.FC = () => {
     setSuccess('');
 
     try {
-      const response = await fetch('/api/admin/privacy-policy', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/privacy-policy`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
