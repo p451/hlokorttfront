@@ -206,9 +206,7 @@ const AdminPanel: React.FC = () => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees`, {
-        credentials: 'include'
-      });
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees`);
       if (response.ok) {
         const data = await response.json();
         setEmployees(data);
