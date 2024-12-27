@@ -149,7 +149,8 @@ const App: React.FC = () => {
           credentials: 'include',
           headers: {
             'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
+            'Pragma': 'no-cache',
+            'Content-Type': 'application/json'
           }
         });
         if (response.ok) {
@@ -168,7 +169,10 @@ const App: React.FC = () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/logout`, { 
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       if (response.ok) {
         setUser(null);
@@ -184,7 +188,10 @@ const App: React.FC = () => {
   const handleShowBenefits = async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/benefits`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       if (response.ok) {
         const data = await response.json();
