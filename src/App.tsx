@@ -155,6 +155,7 @@ const App: React.FC = () => {
         });
         if (response.ok) {
           const data = await response.json();
+          console.log("Check auth response data:", data);
           setUser(data);
         }
       } catch (err) {
@@ -211,6 +212,7 @@ const App: React.FC = () => {
   }
 
   if (user.isAdmin) {
+    console.log("User data before admin check:", user);
     return (
       <div className="min-h-screen bg-gray-100">
         <AdminPanel />
