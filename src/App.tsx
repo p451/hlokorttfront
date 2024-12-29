@@ -156,7 +156,7 @@ const App: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           console.log("Check auth response data:", data);
-          setUser(data);
+          setUser({ ...data, isAdmin: data.isAdmin });
         }
       } catch (err) {
         console.error('Auth check failed:', err);
