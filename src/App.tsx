@@ -7,7 +7,6 @@ import { User } from 'lucide-react';
 import { Employee, Benefit } from './types';
 import AdminPanel from './components/AdminPanel';
 import { EmployeeView } from './components/EmployeeView';
-import { useNavigate } from 'react-router-dom';
 
 interface LoginProps {
   onLogin: (user: Employee) => void;
@@ -142,47 +141,33 @@ const App: React.FC = () => {
   const [showBenefits, setShowBenefits] = useState<boolean>(false);
   const [benefits, setBenefits] = useState<Benefit[]>([]);
   const [error, setError] = useState<string>('');
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const controller = new AbortController();
-    
     const checkAuth = async () => {
       try {
-        setError(''); // Clear previous errors
         const response = await fetch(`${process.env.REACT_APP_API_URL}/api/check-auth`, {
           credentials: 'include',
           headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache',
             'Content-Type': 'application/json'
-          },
-          signal: controller.signal
+          }
         });
-        
         if (response.ok) {
           const data = await response.json();
+          console.log("Check auth response data:", data);
           setUser(data);
-        } else if (response.status === 401) {
-          setUser(null);
-          navigate('/login');
         }
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          if (error.name === 'AbortError') return;
-          console.error('Auth check failed:', error);
-          setError('Kirjautumisen tarkistus epäonnistui');
-        }
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        setError('Kirjautumisen tarkistus epäonnistui');
       }
     };
-    
     checkAuth();
-    return () => controller.abort();
-  }, [navigate, setUser]); // Add required dependencies
+  }, []); //
 
   const handleLogout = async () => {
     try {
-      setError(''); // Clear errors
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/logout`, { 
         method: 'POST',
         credentials: 'include',
@@ -192,7 +177,8 @@ const App: React.FC = () => {
       });
       if (response.ok) {
         setUser(null);
-        navigate('/login');
+        setBenefits([]);
+        setShowBenefits(false);
       }
     } catch (err) {
       console.error('Logout failed:', err);
@@ -226,7 +212,7 @@ const App: React.FC = () => {
   }
 
   if (user.isAdmin) {
-    console.log("User data before admin check:", user);
+     console.log("User data before admin check:", user);
     return (
       <div className="min-h-screen bg-gray-100">
         <AdminPanel />
