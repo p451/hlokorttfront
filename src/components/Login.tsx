@@ -51,7 +51,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       
       const data = await response.json();
       console.log("Login response data:", data);
-      onLogin(data);
+      onLogin(data.user);
     } catch (err) {
       console.error('Login error:', err);
       setError('Verkkovirhe. Tarkista yhteys.');
