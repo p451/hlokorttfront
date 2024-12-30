@@ -209,7 +209,8 @@ const AdminPanel: React.FC = () => {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees`, {
         credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       if (response.ok) {
@@ -247,7 +248,10 @@ const AdminPanel: React.FC = () => {
         try {
           const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
             body: JSON.stringify(newEmployee)
           });
 
@@ -290,7 +294,10 @@ const AdminPanel: React.FC = () => {
         try {
           const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees/${editingEmployee.id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
             credentials: 'include',
             body: JSON.stringify({
               name: editingEmployee.name,
@@ -333,7 +340,10 @@ const AdminPanel: React.FC = () => {
         try {
           const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/reset-password`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
             body: JSON.stringify({ userId, newPassword })
           });
 
@@ -360,7 +370,10 @@ const AdminPanel: React.FC = () => {
         setIsLoading(true);
         try {
           const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees/${userId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
           });
 
           if (response.ok) {

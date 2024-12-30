@@ -150,7 +150,8 @@ const App: React.FC = () => {
           headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
         if (response.ok) {
@@ -164,7 +165,7 @@ const App: React.FC = () => {
       }
     };
     checkAuth();
-  }, []); //
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -172,7 +173,8 @@ const App: React.FC = () => {
         method: 'POST',
         credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       if (response.ok) {
@@ -191,7 +193,8 @@ const App: React.FC = () => {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/benefits`, {
         credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       if (response.ok) {
