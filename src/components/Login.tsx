@@ -51,6 +51,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       
       const data = await response.json();
       console.log("Login response data:", data);
+      localStorage.setItem('token', data.accessToken); // Store the token
       onLogin({ ...data.user, isAdmin: data.user.isAdmin });
     } catch (err) {
       console.error('Login error:', err);
