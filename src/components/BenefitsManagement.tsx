@@ -51,7 +51,11 @@ const BenefitsManagement: React.FC = () => {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits`, {
+      if (!token) {
+        setError('Token puuttuu');
+        return;
+      }
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/benefits`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
