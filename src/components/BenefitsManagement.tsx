@@ -55,7 +55,7 @@ const BenefitsManagement: React.FC = () => {
         setError('Token puuttuu');
         return;
       }
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/benefits`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
