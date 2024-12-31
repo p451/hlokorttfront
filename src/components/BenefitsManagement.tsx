@@ -50,12 +50,19 @@ const BenefitsManagement: React.FC = () => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setBenefits(data);
       } else {
-        setError('Failed to fetch benefits');
+        const errorText = await response.text();
+        setError(errorText || 'Failed to fetch benefits');
       }
     } catch (err) {
       setError('Network error');
@@ -80,7 +87,11 @@ const BenefitsManagement: React.FC = () => {
 
           const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            credentials: 'include',
             body: JSON.stringify(benefitToAdd)
           });
 
@@ -95,8 +106,8 @@ const BenefitsManagement: React.FC = () => {
             });
             await fetchBenefits();
           } else {
-            const data = await response.json();
-            setError(data.error || 'Failed to add benefit');
+            const errorText = await response.text();
+            setError(errorText || 'Failed to add benefit');
           }
         } catch (err) {
           setError('Network error');
@@ -120,7 +131,11 @@ const BenefitsManagement: React.FC = () => {
         try {
           const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits/${editingBenefit.id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            credentials: 'include',
             body: JSON.stringify(editingBenefit)
           });
 
@@ -129,7 +144,8 @@ const BenefitsManagement: React.FC = () => {
             setEditingBenefit(null);
             await fetchBenefits();
           } else {
-            setError('Failed to update benefit');
+            const errorText = await response.text();
+            setError(errorText || 'Failed to update benefit');
           }
         } catch (err) {
           setError('Network error');
@@ -149,14 +165,19 @@ const BenefitsManagement: React.FC = () => {
         setIsLoading(true);
         try {
           const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits/${benefitId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            credentials: 'include'
           });
 
           if (response.ok) {
             setSuccess('Benefit deleted successfully');
             await fetchBenefits();
           } else {
-            setError('Failed to delete benefit');
+            const errorText = await response.text();
+            setError(errorText || 'Failed to delete benefit');
           }
         } catch (err) {
           setError('Network error');
