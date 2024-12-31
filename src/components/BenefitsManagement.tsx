@@ -58,13 +58,22 @@ const BenefitsManagement: React.FC = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setBenefits(data);
-      } else {
+      
+      if (!response.ok) {
         const errorText = await response.text();
-        setError(errorText || 'Failed to fetch benefits');
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error;
+        } catch {
+          errorMessage = errorText || 'Failed to fetch benefits';
+        }
+        setError(errorMessage);
+        return;
       }
+
+      const data = await response.json();
+      setBenefits(data);
     } catch (err) {
       setError('Network error');
     } finally {
@@ -96,20 +105,28 @@ const BenefitsManagement: React.FC = () => {
             body: JSON.stringify(benefitToAdd)
           });
 
-          if (response.ok) {
-            setSuccess('Benefit added successfully');
-            setShowAddForm(false);
-            setNewBenefit({
-              level: 'BRONZE',
-              title: '',
-              description: '',
-              validUntil: ''
-            });
-            await fetchBenefits();
-          } else {
+          if (!response.ok) {
             const errorText = await response.text();
-            setError(errorText || 'Failed to add benefit');
+            let errorMessage;
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error;
+            } catch {
+              errorMessage = errorText || 'Failed to add benefit';
+            }
+            setError(errorMessage);
+            return;
           }
+
+          setSuccess('Benefit added successfully');
+          setShowAddForm(false);
+          setNewBenefit({
+            level: 'BRONZE',
+            title: '',
+            description: '',
+            validUntil: ''
+          });
+          await fetchBenefits();
         } catch (err) {
           setError('Network error');
         } finally {
@@ -140,14 +157,22 @@ const BenefitsManagement: React.FC = () => {
             body: JSON.stringify(editingBenefit)
           });
 
-          if (response.ok) {
-            setSuccess('Benefit updated successfully');
-            setEditingBenefit(null);
-            await fetchBenefits();
-          } else {
+          if (!response.ok) {
             const errorText = await response.text();
-            setError(errorText || 'Failed to update benefit');
+            let errorMessage;
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error;
+            } catch {
+              errorMessage = errorText || 'Failed to update benefit';
+            }
+            setError(errorMessage);
+            return;
           }
+
+          setSuccess('Benefit updated successfully');
+          setEditingBenefit(null);
+          await fetchBenefits();
         } catch (err) {
           setError('Network error');
         } finally {
@@ -173,13 +198,21 @@ const BenefitsManagement: React.FC = () => {
             credentials: 'include'
           });
 
-          if (response.ok) {
-            setSuccess('Benefit deleted successfully');
-            await fetchBenefits();
-          } else {
+          if (!response.ok) {
             const errorText = await response.text();
-            setError(errorText || 'Failed to delete benefit');
+            let errorMessage;
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error;
+            } catch {
+              errorMessage = errorText || 'Failed to delete benefit';
+            }
+            setError(errorMessage);
+            return;
           }
+
+          setSuccess('Benefit deleted successfully');
+          await fetchBenefits();
         } catch (err) {
           setError('Network error');
         } finally {

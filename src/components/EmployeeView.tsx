@@ -166,13 +166,22 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setPrivacyPolicy(data.content);
-      } else {
+      
+      if (!response.ok) {
         const errorText = await response.text();
-        setPrivacyError(errorText || 'Tietosuojaselosteen lataus epäonnistui');
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error;
+        } catch {
+          errorMessage = errorText || 'Tietosuojaselosteen lataus epäonnistui';
+        }
+        setPrivacyError(errorMessage);
+        return;
       }
+  
+      const data = await response.json();
+      setPrivacyPolicy(data.content);
     } catch (err) {
       console.error('Failed to fetch privacy policy:', err);
       setPrivacyError('Tietosuojaselosteen lataus epäonnistui');

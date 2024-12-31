@@ -226,13 +226,22 @@ const AdminPanel: React.FC = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setEmployees(data);
-      } else {
+      
+      if (!response.ok) {
         const errorText = await response.text();
-        setError(errorText || 'Failed to fetch employees');
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error;
+        } catch {
+          errorMessage = errorText || 'Failed to fetch employees';
+        }
+        setError(errorMessage);
+        return;
       }
+  
+      const data = await response.json();
+      setEmployees(data);
     } catch (err) {
       setError('Network error');
     } finally {
@@ -269,24 +278,32 @@ const AdminPanel: React.FC = () => {
             body: JSON.stringify(newEmployee)
           });
 
-          if (response.ok) {
-            setSuccess('Employee added successfully');
-            setShowAddForm(false);
-            setNewEmployee({
-              username: '',
-              name: '',
-              company: '',
-              email: '',
-              membershipLevel: 'BRONZE',
-              validUntil: '',
-              startDate: '',
-              password: ''
-            });
-            await fetchEmployees();
-          } else {
+          if (!response.ok) {
             const errorText = await response.text();
-            setError(errorText || 'Failed to add employee');
+            let errorMessage;
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error;
+            } catch {
+              errorMessage = errorText || 'Failed to add employee';
+            }
+            setError(errorMessage);
+            return;
           }
+  
+          setSuccess('Employee added successfully');
+          setShowAddForm(false);
+          setNewEmployee({
+            username: '',
+            name: '',
+            company: '',
+            email: '',
+            membershipLevel: 'BRONZE',
+            validUntil: '',
+            startDate: '',
+            password: ''
+          });
+          await fetchEmployees();
         } catch (err) {
           setError('Network error');
         } finally {
@@ -324,14 +341,22 @@ const AdminPanel: React.FC = () => {
             })
           });
   
-          if (response.ok) {
-            setSuccess('Employee updated successfully');
-            setEditingEmployee(null);
-            await fetchEmployees();
-          } else {
+          if (!response.ok) {
             const errorText = await response.text();
-            setError(errorText || 'Failed to update employee');
+            let errorMessage;
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error;
+            } catch {
+              errorMessage = errorText || 'Failed to update employee';
+            }
+            setError(errorMessage);
+            return;
           }
+  
+          setSuccess('Employee updated successfully');
+          setEditingEmployee(null);
+          await fetchEmployees();
         } catch (err) {
           setError('Network error');
         } finally {
@@ -362,12 +387,20 @@ const AdminPanel: React.FC = () => {
             body: JSON.stringify({ userId, newPassword })
           });
 
-          if (response.ok) {
-            setSuccess('Password reset successfully');
-          } else {
+          if (!response.ok) {
             const errorText = await response.text();
-            setError(errorText || 'Failed to reset password');
+            let errorMessage;
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error;
+            } catch {
+              errorMessage = errorText || 'Failed to reset password';
+            }
+            setError(errorMessage);
+            return;
           }
+  
+          setSuccess('Password reset successfully');
         } catch (err) {
           setError('Network error');
         } finally {
@@ -392,13 +425,21 @@ const AdminPanel: React.FC = () => {
             }
           });
 
-          if (response.ok) {
-            setSuccess('Employee deleted successfully');
-            await fetchEmployees();
-          } else {
+          if (!response.ok) {
             const errorText = await response.text();
-            setError(errorText || 'Failed to delete employee');
+            let errorMessage;
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error;
+            } catch {
+              errorMessage = errorText || 'Failed to delete employee';
+            }
+            setError(errorMessage);
+            return;
           }
+  
+          setSuccess('Employee deleted successfully');
+          await fetchEmployees();
         } catch (err) {
           setError('Network error');
         } finally {

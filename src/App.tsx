@@ -153,14 +153,23 @@ const App: React.FC = () => {
             'Authorization': `Bearer ${token}`
           }
         });
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Check auth response data:", data);
-          setUser({ ...data, isAdmin: data.isAdmin });
-        } else {
+        
+        if (!response.ok) {
           const errorText = await response.text();
-          setError(errorText || 'Kirjautumisen tarkistus epäonnistui');
+          let errorMessage;
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error;
+          } catch {
+            errorMessage = errorText || 'Kirjautumisen tarkistus epäonnistui';
+          }
+          setError(errorMessage);
+          return;
         }
+  
+        const data = await response.json();
+        console.log("Check auth response data:", data);
+        setUser({ ...data, isAdmin: data.isAdmin });
       } catch (err) {
         console.error('Auth check failed:', err);
         setError('Kirjautumisen tarkistus epäonnistui');
@@ -179,14 +188,23 @@ const App: React.FC = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (response.ok) {
-        setUser(null);
-        setBenefits([]);
-        setShowBenefits(false);
-      } else {
+      
+      if (!response.ok) {
         const errorText = await response.text();
-        setError(errorText || 'Uloskirjautuminen epäonnistui');
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error;
+        } catch {
+          errorMessage = errorText || 'Uloskirjautuminen epäonnistui';
+        }
+        setError(errorMessage);
+        return;
       }
+  
+      setUser(null);
+      setBenefits([]);
+      setShowBenefits(false);
     } catch (err) {
       console.error('Logout failed:', err);
       setError('Uloskirjautuminen epäonnistui');
@@ -202,14 +220,23 @@ const App: React.FC = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setBenefits(data);
-        setShowBenefits(true);
-      } else {
+      
+      if (!response.ok) {
         const errorText = await response.text();
-        setError(errorText || 'Etujen hakeminen epäonnistui');
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error;
+        } catch {
+          errorMessage = errorText || 'Etujen hakeminen epäonnistui';
+        }
+        setError(errorMessage);
+        return;
       }
+  
+      const data = await response.json();
+      setBenefits(data);
+      setShowBenefits(true);
     } catch (err) {
       console.error('Failed to fetch benefits:', err);
       setError('Verkkovirhe etujen hakemisessa');
