@@ -144,6 +144,10 @@ const App: React.FC = () => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Token puuttuu');
+          return;
+        }
         const response = await fetch(`${process.env.REACT_APP_API_URL}/api/check-auth`, {
           credentials: 'include',
           headers: {

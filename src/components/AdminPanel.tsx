@@ -219,6 +219,10 @@ const AdminPanel: React.FC = () => {
     setError('');
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Token puuttuu');
+        return;
+      }
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees`, {
         credentials: 'include',
         headers: {
