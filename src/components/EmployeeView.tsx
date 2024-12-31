@@ -157,28 +157,29 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
   const [privacyError, setPrivacyError] = useState<string>('');
   const [error, setError] = useState<string>(propError || '');
 
-  useEffect(() => {
-    const fetchPrivacyPolicy = async () => {
-      try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/privacy-policy`, {
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setPrivacyPolicy(data.content);
-        } else {
-          const errorText = await response.text();
-          setPrivacyError(errorText || 'Tietosuojaselosteen lataus epäonnistui');
+  const fetchPrivacyPolicy = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/privacy-policy`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
-      } catch (err) {
-        console.error('Failed to fetch privacy policy:', err);
-        setPrivacyError('Tietosuojaselosteen lataus epäonnistui');
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPrivacyPolicy(data.content);
+      } else {
+        const errorText = await response.text();
+        setPrivacyError(errorText || 'Tietosuojaselosteen lataus epäonnistui');
       }
-    };
+    } catch (err) {
+      console.error('Failed to fetch privacy policy:', err);
+      setPrivacyError('Tietosuojaselosteen lataus epäonnistui');
+    }
+  };
+
+  useEffect(() => {
     fetchPrivacyPolicy();
   }, []);
 
