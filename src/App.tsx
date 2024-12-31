@@ -134,8 +134,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   );
 };
 
-
-
 const App: React.FC = () => {
   const [user, setUser] = useState<Employee | null>(null);
   const [showBenefits, setShowBenefits] = useState<boolean>(false);
@@ -158,6 +156,9 @@ const App: React.FC = () => {
           const data = await response.json();
           console.log("Check auth response data:", data);
           setUser({ ...data, isAdmin: data.isAdmin });
+        } else {
+          const errorText = await response.text();
+          setError(errorText || 'Kirjautumisen tarkistus epäonnistui');
         }
       } catch (err) {
         console.error('Auth check failed:', err);
@@ -181,6 +182,9 @@ const App: React.FC = () => {
         setUser(null);
         setBenefits([]);
         setShowBenefits(false);
+      } else {
+        const errorText = await response.text();
+        setError(errorText || 'Uloskirjautuminen epäonnistui');
       }
     } catch (err) {
       console.error('Logout failed:', err);
@@ -202,7 +206,8 @@ const App: React.FC = () => {
         setBenefits(data);
         setShowBenefits(true);
       } else {
-        setError('Etujen hakeminen epäonnistui');
+        const errorText = await response.text();
+        setError(errorText || 'Etujen hakeminen epäonnistui');
       }
     } catch (err) {
       console.error('Failed to fetch benefits:', err);

@@ -26,14 +26,22 @@ const LogoSelector: React.FC<{
   const fetchLogos = async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/available-logos`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       if (response.ok) {
         const data = await response.json();
         setAvailableLogos(data.logos || []);
+      } else {
+        const errorText = await response.text();
+        setUploadError(errorText || 'Failed to fetch logos');
       }
     } catch (err) {
       console.error('Failed to fetch logos:', err);
+      setUploadError('Network error');
     }
   };
 
@@ -51,11 +59,15 @@ const LogoSelector: React.FC<{
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/upload-logo`, {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: formData
       });
 
       if (!response.ok) {
-        throw new Error('Failed to upload logo');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to upload logo');
       }
 
       const data = await response.json();
@@ -66,7 +78,7 @@ const LogoSelector: React.FC<{
       await fetchLogos();
       setIsExpanded(true);
     } catch (err) {
-      setUploadError('Failed to upload logo');
+      setUploadError(err instanceof Error ? err.message : 'Failed to upload logo');
       console.error('Upload error:', err);
     } finally {
       setIsLoading(false);
@@ -217,7 +229,8 @@ const AdminPanel: React.FC = () => {
         const data = await response.json();
         setEmployees(data);
       } else {
-        setError('Failed to fetch employees');
+        const errorText = await response.text();
+        setError(errorText || 'Failed to fetch employees');
       }
     } catch (err) {
       setError('Network error');
@@ -270,8 +283,8 @@ const AdminPanel: React.FC = () => {
             });
             await fetchEmployees();
           } else {
-            const data = await response.json();
-            setError(data.error || 'Failed to add employee');
+            const errorText = await response.text();
+            setError(errorText || 'Failed to add employee');
           }
         } catch (err) {
           setError('Network error');
@@ -315,7 +328,8 @@ const AdminPanel: React.FC = () => {
             setEditingEmployee(null);
             await fetchEmployees();
           } else {
-            setError('Failed to update employee');
+            const errorText = await response.text();
+            setError(errorText || 'Failed to update employee');
           }
         } catch (err) {
           setError('Network error');
@@ -350,7 +364,8 @@ const AdminPanel: React.FC = () => {
           if (response.ok) {
             setSuccess('Password reset successfully');
           } else {
-            setError('Failed to reset password');
+            const errorText = await response.text();
+            setError(errorText || 'Failed to reset password');
           }
         } catch (err) {
           setError('Network error');
@@ -380,7 +395,8 @@ const AdminPanel: React.FC = () => {
             setSuccess('Employee deleted successfully');
             await fetchEmployees();
           } else {
-            setError('Failed to delete employee');
+            const errorText = await response.text();
+            setError(errorText || 'Failed to delete employee');
           }
         } catch (err) {
           setError('Network error');
