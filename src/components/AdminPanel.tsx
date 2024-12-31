@@ -218,11 +218,12 @@ const AdminPanel: React.FC = () => {
     setIsLoading(true);
     setError('');
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       if (response.ok) {

@@ -143,13 +143,14 @@ const App: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const token = localStorage.getItem('token');
         const response = await fetch(`${process.env.REACT_APP_API_URL}/api/check-auth`, {
           credentials: 'include',
           headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache',
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
         if (response.ok) {
