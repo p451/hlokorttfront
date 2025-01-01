@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Alert, AlertDescription } from './ui/alert';
 import { User } from 'lucide-react';
 import { Employee } from '../types';
+import apiClient from '../apiClient';
 
 interface LoginProps {
   onLogin: (user: Employee) => void;
@@ -25,40 +26,20 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
     setIsLoading(true);
     
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/login`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData)
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error;
-        } catch {
-          errorMessage = errorText || 'Kirjautumisvirhe';
-        }
-        setError(errorMessage);
-        return;
-      }
-      
-      const data = await response.json();
-      console.log("Login response data:", data);
+    const { data, error } = await apiClient.post<{ user: Employee; accessToken: string }>('/api/login', formData);
+    
+    if (error) {
+      setError(error);
+      setIsLoading(false);
+      return;
+    }
+    
+    if (data) {
       localStorage.setItem('token', data.accessToken); // Store the token
       onLogin({ ...data.user, isAdmin: data.user.isAdmin });
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Verkkovirhe. Tarkista yhteys.');
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

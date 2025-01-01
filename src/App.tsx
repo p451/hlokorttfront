@@ -7,6 +7,7 @@ import { User } from 'lucide-react';
 import { Employee, Benefit } from './types';
 import AdminPanel from './components/AdminPanel';
 import { EmployeeView } from './components/EmployeeView';
+import apiClient from './apiClient';
 
 interface LoginProps {
   onLogin: (user: Employee) => void;
@@ -27,38 +28,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
     setIsLoading(true);
     
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/login`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData)
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error;
-        } catch {
-          errorMessage = errorText || 'Kirjautumisvirhe';
-        }
-        setError(errorMessage);
-        return;
-      }
-      
-      const data = await response.json();
-      onLogin(data.user);
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Verkkovirhe. Tarkista yhteys.');
-    } finally {
+    const { data, error } = await apiClient.post<{ user: Employee; accessToken: string }>('/api/login', formData);
+    
+    if (error) {
+      setError(error);
       setIsLoading(false);
+      return;
     }
+    
+    if (data) {
+      localStorage.setItem('token', data.accessToken); // Store the token
+      onLogin({ ...data.user, isAdmin: data.user.isAdmin });
+    }
+    
+    setIsLoading(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,108 +125,46 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('Token puuttuu');
-          return;
-        }
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/check-auth`, {
-          credentials: 'include',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          let errorMessage;
-          try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.error;
-          } catch {
-            errorMessage = errorText || 'Kirjautumisen tarkistus epäonnistui';
-          }
-          setError(errorMessage);
-          return;
-        }
-  
-        const data = await response.json();
-        console.log("Check auth response data:", data);
+      const { data, error } = await apiClient.get<Employee>('/api/check-auth');
+      
+      if (error) {
+        setError(error);
+        return;
+      }
+      
+      if (data) {
         setUser({ ...data, isAdmin: data.isAdmin });
-      } catch (err) {
-        console.error('Auth check failed:', err);
-        setError('Kirjautumisen tarkistus epäonnistui');
       }
     };
     checkAuth();
   }, []);
 
   const handleLogout = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/logout`, { 
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error;
-        } catch {
-          errorMessage = errorText || 'Uloskirjautuminen epäonnistui';
-        }
-        setError(errorMessage);
-        return;
-      }
-  
+    const { data, error } = await apiClient.post('/api/logout');
+    
+    if (error) {
+      setError('Logout failed');
+      return;
+    }
+    
+    if (data) {
       setUser(null);
       setBenefits([]);
       setShowBenefits(false);
-    } catch (err) {
-      console.error('Logout failed:', err);
-      setError('Uloskirjautuminen epäonnistui');
     }
   };
 
   const handleShowBenefits = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/benefits`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error;
-        } catch {
-          errorMessage = errorText || 'Etujen hakeminen epäonnistui';
-        }
-        setError(errorMessage);
-        return;
-      }
-  
-      const data = await response.json();
+    const { data, error } = await apiClient.get<Benefit[]>('/api/benefits');
+    
+    if (error) {
+      setError(error);
+      return;
+    }
+    
+    if (data) {
       setBenefits(data);
       setShowBenefits(true);
-    } catch (err) {
-      console.error('Failed to fetch benefits:', err);
-      setError('Verkkovirhe etujen hakemisessa');
     }
   };
 
@@ -252,7 +173,6 @@ const App: React.FC = () => {
   }
 
   if (user.isAdmin) {
-     console.log("User data before admin check:", user);
     return (
       <div className="min-h-screen bg-gray-100">
         <AdminPanel />

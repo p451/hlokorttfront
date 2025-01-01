@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
 import { LogOut, Gift, Shield, Upload } from 'lucide-react';
 import { Employee, Benefit } from '../types';
+import apiClient from '../apiClient';
 
 interface EmployeeViewProps {
   user: Employee;
@@ -51,27 +52,20 @@ const ProfileImage: React.FC<{ imageUrl?: string; profileImageAdded?: boolean }>
     setIsUploading(true);
     setError('');
     
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/upload-profile-image`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to upload image');
-      }
-      
-      const data = await response.json();
+    const { data, error } = await apiClient.upload<{ imageUrl: string }>('/api/upload-profile-image', formData);
+    
+    if (error) {
+      setError(error);
+      setIsUploading(false);
+      return;
+    }
+    
+    if (data) {
       setCurrentImageUrl(data.imageUrl);
       window.location.reload(); // Päivitä sivu näyttääksesi uuden tilan
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload image');
-      console.error('Upload error:', err);
-    } finally {
-      setIsUploading(false);
     }
+    
+    setIsUploading(false);
   };
 
   return (
@@ -158,33 +152,15 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
   const [error, setError] = useState<string>(propError || '');
 
   const fetchPrivacyPolicy = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/privacy-policy`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error;
-        } catch {
-          errorMessage = errorText || 'Tietosuojaselosteen lataus epäonnistui';
-        }
-        setPrivacyError(errorMessage);
-        return;
-      }
-  
-      const data = await response.json();
+    const { data, error } = await apiClient.get<{ content: string }>('/api/privacy-policy');
+    
+    if (error) {
+      setPrivacyError(error);
+      return;
+    }
+    
+    if (data) {
       setPrivacyPolicy(data.content);
-    } catch (err) {
-      console.error('Failed to fetch privacy policy:', err);
-      setPrivacyError('Tietosuojaselosteen lataus epäonnistui');
     }
   };
 

@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 import { Benefit, MembershipLevel } from '../types';
 import ConfirmationDialog from './ui/confirmation-dialog';
+import apiClient from '../apiClient';
 
 interface NewBenefitData {
   level: MembershipLevel;
@@ -49,40 +50,20 @@ const BenefitsManagement: React.FC = () => {
   const fetchBenefits = async () => {
     setIsLoading(true);
     setError('');
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Token puuttuu');
-        return;
-      }
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error;
-        } catch {
-          errorMessage = errorText || 'Failed to fetch benefits';
-        }
-        setError(errorMessage);
-        return;
-      }
-
-      const data = await response.json();
-      setBenefits(data);
-    } catch (err) {
-      setError('Network error');
-    } finally {
+    
+    const { data, error } = await apiClient.get<Benefit[]>('/api/admin/benefits');
+    
+    if (error) {
+      setError(error);
       setIsLoading(false);
+      return;
     }
+    
+    if (data) {
+      setBenefits(data);
+    }
+    
+    setIsLoading(false);
   };
 
   const handleAddBenefit = async (e: React.FormEvent) => {
@@ -93,35 +74,20 @@ const BenefitsManagement: React.FC = () => {
       description: 'Oletko varma, että haluat lisätä uuden edun?',
       onConfirm: async () => {
         setIsLoading(true);
-        try {
-          const benefitToAdd = {
-            ...newBenefit,
-            level: selectedLevel
-          };
+        const benefitToAdd = {
+          ...newBenefit,
+          level: selectedLevel
+        };
 
-          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            credentials: 'include',
-            body: JSON.stringify(benefitToAdd)
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            let errorMessage;
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.error;
-            } catch {
-              errorMessage = errorText || 'Failed to add benefit';
-            }
-            setError(errorMessage);
-            return;
-          }
-
+        const { data, error } = await apiClient.post('/api/admin/benefits', benefitToAdd);
+        
+        if (error) {
+          setError(error);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data) {
           setSuccess('Benefit added successfully');
           setShowAddForm(false);
           setNewBenefit({
@@ -131,11 +97,9 @@ const BenefitsManagement: React.FC = () => {
             validUntil: ''
           });
           await fetchBenefits();
-        } catch (err) {
-          setError('Network error');
-        } finally {
-          setIsLoading(false);
         }
+        
+        setIsLoading(false);
       }
     });
   };
@@ -150,38 +114,21 @@ const BenefitsManagement: React.FC = () => {
       description: 'Oletko varma, että haluat päivittää edun tiedot?',
       onConfirm: async () => {
         setIsLoading(true);
-        try {
-          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits/${editingBenefit.id}`, {
-            method: 'PUT',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            credentials: 'include',
-            body: JSON.stringify(editingBenefit)
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            let errorMessage;
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.error;
-            } catch {
-              errorMessage = errorText || 'Failed to update benefit';
-            }
-            setError(errorMessage);
-            return;
-          }
-
+        const { data, error } = await apiClient.put(`/api/admin/benefits/${editingBenefit.id}`, editingBenefit);
+        
+        if (error) {
+          setError(error);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data) {
           setSuccess('Benefit updated successfully');
           setEditingBenefit(null);
           await fetchBenefits();
-        } catch (err) {
-          setError('Network error');
-        } finally {
-          setIsLoading(false);
         }
+        
+        setIsLoading(false);
       }
     });
   };
@@ -193,35 +140,20 @@ const BenefitsManagement: React.FC = () => {
       description: 'Oletko varma, että haluat poistaa edun? Tätä toimintoa ei voi peruuttaa.',
       onConfirm: async () => {
         setIsLoading(true);
-        try {
-          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/benefits/${benefitId}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            credentials: 'include'
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            let errorMessage;
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.error;
-            } catch {
-              errorMessage = errorText || 'Failed to delete benefit';
-            }
-            setError(errorMessage);
-            return;
-          }
-
+        const { data, error } = await apiClient.delete(`/api/admin/benefits/${benefitId}`);
+        
+        if (error) {
+          setError(error);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data) {
           setSuccess('Benefit deleted successfully');
           await fetchBenefits();
-        } catch (err) {
-          setError('Network error');
-        } finally {
-          setIsLoading(false);
         }
+        
+        setIsLoading(false);
       }
     });
   };

@@ -9,6 +9,7 @@ import { Employee, MembershipLevel } from '../types';
 import ConfirmationDialog from './ui/confirmation-dialog';
 import BenefitsManagement from './BenefitsManagement';
 import PrivacyPolicyManagement from './PrivacyPolicyManagement';
+import apiClient from '../apiClient';
 
 const LogoSelector: React.FC<{
   currentLogo: string;
@@ -24,24 +25,15 @@ const LogoSelector: React.FC<{
   }, []);
 
   const fetchLogos = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/available-logos`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableLogos(data.logos || []);
-      } else {
-        const errorText = await response.text();
-        setUploadError(errorText || 'Failed to fetch logos');
-      }
-    } catch (err) {
-      console.error('Failed to fetch logos:', err);
-      setUploadError('Network error');
+    const { data, error } = await apiClient.get<{ logos: string[] }>('/api/admin/available-logos');
+    
+    if (error) {
+      setUploadError(error);
+      return;
+    }
+    
+    if (data) {
+      setAvailableLogos(data.logos || []);
     }
   };
 
@@ -55,34 +47,21 @@ const LogoSelector: React.FC<{
     setIsLoading(true);
     setUploadError('');
 
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/upload-logo`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to upload logo');
-      }
-
-      const data = await response.json();
-      if (data.logoUrl) {
-        onSelect(data.logoUrl);
-      }
-      
+    const { data, error } = await apiClient.upload<{ logoUrl: string }>('/api/admin/upload-logo', formData);
+    
+    if (error) {
+      setUploadError(error);
+      setIsLoading(false);
+      return;
+    }
+    
+    if (data) {
+      onSelect(data.logoUrl);
       await fetchLogos();
       setIsExpanded(true);
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Failed to upload logo');
-      console.error('Upload error:', err);
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -162,8 +141,6 @@ const LogoSelector: React.FC<{
   );
 };
 
-
-
 interface NewEmployeeData {
   username: string;
   name: string;
@@ -217,42 +194,21 @@ const AdminPanel: React.FC = () => {
   const fetchEmployees = async () => {
     setIsLoading(true);
     setError('');
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Token puuttuu');
-        return;
-      }
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error;
-        } catch {
-          errorMessage = errorText || 'Failed to fetch employees';
-        }
-        setError(errorMessage);
-        return;
-      }
-  
-      const data = await response.json();
-      setEmployees(data);
-    } catch (err) {
-      setError('Network error');
-    } finally {
+    const { data, error } = await apiClient.get<Employee[]>('/api/admin/employees');
+    
+    if (error) {
+      setError(error);
       setIsLoading(false);
+      return;
     }
+    
+    if (data) {
+      setEmployees(data);
+    }
+    
+    setIsLoading(false);
   };
-  
+
   const handleEditEmployee = (employee: Employee) => {
     // Luodaan kopio työntekijän tiedoista editointia varten
     setEditingEmployee({ 
@@ -272,29 +228,15 @@ const AdminPanel: React.FC = () => {
       description: 'Oletko varma, että haluat lisätä uuden työntekijän?',
       onConfirm: async () => {
         setIsLoading(true);
-        try {
-          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify(newEmployee)
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            let errorMessage;
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.error;
-            } catch {
-              errorMessage = errorText || 'Failed to add employee';
-            }
-            setError(errorMessage);
-            return;
-          }
-  
+        const { data, error } = await apiClient.post('/api/admin/employees', newEmployee);
+        
+        if (error) {
+          setError(error);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data) {
           setSuccess('Employee added successfully');
           setShowAddForm(false);
           setNewEmployee({
@@ -308,11 +250,9 @@ const AdminPanel: React.FC = () => {
             password: ''
           });
           await fetchEmployees();
-        } catch (err) {
-          setError('Network error');
-        } finally {
-          setIsLoading(false);
         }
+        
+        setIsLoading(false);
       }
     });
   };
@@ -326,50 +266,32 @@ const AdminPanel: React.FC = () => {
       description: 'Oletko varma, että haluat tallentaa muutokset työntekijän tietoihin?',
       onConfirm: async () => {
         setIsLoading(true);
-        try {
-          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees/${editingEmployee.id}`, {
-            method: 'PUT',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              name: editingEmployee.name,
-              company: editingEmployee.company,
-              email: editingEmployee.email,
-              membershipLevel: editingEmployee.membershipLevel,
-              validUntil: editingEmployee.validUntil,
-              startDate: editingEmployee.startDate,
-              logoUrl: editingEmployee.logoUrl
-            })
-          });
-  
-          if (!response.ok) {
-            const errorText = await response.text();
-            let errorMessage;
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.error;
-            } catch {
-              errorMessage = errorText || 'Failed to update employee';
-            }
-            setError(errorMessage);
-            return;
-          }
-  
+        const { data, error } = await apiClient.put(`/api/admin/employees/${editingEmployee.id}`, {
+          name: editingEmployee.name,
+          company: editingEmployee.company,
+          email: editingEmployee.email,
+          membershipLevel: editingEmployee.membershipLevel,
+          validUntil: editingEmployee.validUntil,
+          startDate: editingEmployee.startDate,
+          logoUrl: editingEmployee.logoUrl
+        });
+        
+        if (error) {
+          setError(error);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data) {
           setSuccess('Employee updated successfully');
           setEditingEmployee(null);
           await fetchEmployees();
-        } catch (err) {
-          setError('Network error');
-        } finally {
-          setIsLoading(false);
         }
+        
+        setIsLoading(false);
       }
     });
   };
-  
 
   const handleResetPassword = async (userId: number) => {
     setConfirmDialog({
@@ -381,35 +303,19 @@ const AdminPanel: React.FC = () => {
         if (!newPassword) return;
 
         setIsLoading(true);
-        try {
-          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/reset-password`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ userId, newPassword })
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            let errorMessage;
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.error;
-            } catch {
-              errorMessage = errorText || 'Failed to reset password';
-            }
-            setError(errorMessage);
-            return;
-          }
-  
-          setSuccess('Password reset successfully');
-        } catch (err) {
-          setError('Network error');
-        } finally {
+        const { data, error } = await apiClient.post('/api/admin/reset-password', { userId, newPassword });
+        
+        if (error) {
+          setError(error);
           setIsLoading(false);
+          return;
         }
+        
+        if (data) {
+          setSuccess('Password reset successfully');
+        }
+        
+        setIsLoading(false);
       }
     });
   };
@@ -421,49 +327,34 @@ const AdminPanel: React.FC = () => {
       description: 'Oletko varma, että haluat poistaa työntekijän? Tätä toimintoa ei voi peruuttaa.',
       onConfirm: async () => {
         setIsLoading(true);
-        try {
-          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/employees/${userId}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            let errorMessage;
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.error;
-            } catch {
-              errorMessage = errorText || 'Failed to delete employee';
-            }
-            setError(errorMessage);
-            return;
-          }
-  
+        const { data, error } = await apiClient.delete(`/api/admin/employees/${userId}`);
+        
+        if (error) {
+          setError(error);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data) {
           setSuccess('Employee deleted successfully');
           await fetchEmployees();
-        } catch (err) {
-          setError('Network error');
-        } finally {
-          setIsLoading(false);
         }
+        
+        setIsLoading(false);
       }
     });
   };
 
   const handleLogout = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/logout`, { 
-        method: 'POST',
-        credentials: 'include'
-      });
-      if (response.ok) {
-        window.location.href = '/';
-      }
-    } catch (err) {
+    const { data, error } = await apiClient.post('/api/logout');
+    
+    if (error) {
       setError('Logout failed');
+      return;
+    }
+    
+    if (data) {
+      window.location.href = '/';
     }
   };
 
@@ -572,47 +463,47 @@ const AdminPanel: React.FC = () => {
           )}
 
           <Table>
-          <TableHeader>
-  <TableRow>
-    <TableHead>Logo</TableHead>
-    <TableHead>Username</TableHead>
-    <TableHead>Name</TableHead>
-    <TableHead>Email</TableHead>
-    <TableHead>Company</TableHead>
-    <TableHead>Start Date</TableHead>
-    <TableHead>Valid Until</TableHead>
-    <TableHead>Level</TableHead>
-    <TableHead>Actions</TableHead>
-  </TableRow>
-</TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Logo</TableHead>
+                <TableHead>Username</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Start Date</TableHead>
+                <TableHead>Valid Until</TableHead>
+                <TableHead>Level</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
               {employees.map((employee) => (
                 <TableRow key={employee.id}>
-                <TableCell>
-                  {editingEmployee?.id === employee.id ? (
-                    <LogoSelector
-                      currentLogo={editingEmployee.logoUrl || '/api/placeholder/100/100'}
-                      onSelect={(logoUrl) => setEditingEmployee({...editingEmployee, logoUrl})}
-                    />
-                  ) : (
-                    <img 
-                      src={employee.logoUrl || '/api/placeholder/100/100'} 
-                      alt="Company logo" 
-                      className="w-12 h-12 object-contain"
-                    />
-                  )}
-</TableCell>
-<TableCell>{employee.username}</TableCell>
-  <TableCell>
-    {editingEmployee?.id === employee.id ? (
-      <Input
-        value={editingEmployee.name}
-        onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})}
-      />
-    ) : (
-      employee.name
-    )}
-  </TableCell>
+                  <TableCell>
+                    {editingEmployee?.id === employee.id ? (
+                      <LogoSelector
+                        currentLogo={editingEmployee.logoUrl || '/api/placeholder/100/100'}
+                        onSelect={(logoUrl) => setEditingEmployee({...editingEmployee, logoUrl})}
+                      />
+                    ) : (
+                      <img 
+                        src={employee.logoUrl || '/api/placeholder/100/100'} 
+                        alt="Company logo" 
+                        className="w-12 h-12 object-contain"
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>{employee.username}</TableCell>
+                  <TableCell>
+                    {editingEmployee?.id === employee.id ? (
+                      <Input
+                        value={editingEmployee.name}
+                        onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})}
+                      />
+                    ) : (
+                      employee.name
+                    )}
+                  </TableCell>
                   <TableCell>
                     {editingEmployee?.id === employee.id ? (
                       <Input
@@ -655,31 +546,30 @@ const AdminPanel: React.FC = () => {
                       employee.validUntil
                     )}
                   </TableCell>
-                  {/* AdminPanel.tsx - Level-solun päivitys */}
-<TableCell>
-  {editingEmployee?.id === employee.id ? (
-    <select
-      className="rounded-md border border-input bg-background px-2 py-1"
-      value={editingEmployee.membershipLevel}
-      onChange={e => setEditingEmployee({...editingEmployee, membershipLevel: e.target.value as MembershipLevel})}
-    >
-      <option value="BRONZE">Bronze</option>
-      <option value="SILVER">Silver</option>
-      <option value="GOLD">Gold</option>
-      <option value="PLATINUM">Platinum</option>
-    </select>
-  ) : (
-    <span className={`px-2 py-1 rounded-md inline-block ${
-      employee.membershipLevel === 'GOLD' ? 'bg-yellow-100 text-yellow-800' :
-      employee.membershipLevel === 'SILVER' ? 'bg-gray-100 text-gray-800' :
-      employee.membershipLevel === 'BRONZE' ? 'bg-orange-100 text-orange-800' :
-      employee.membershipLevel === 'PLATINUM' ? 'bg-gray-900 text-white' :
-      'bg-blue-100 text-blue-800'
-    }`}>
-      {employee.membershipLevel || 'BRONZE'}
-    </span>
-  )}
-</TableCell>
+                  <TableCell>
+                    {editingEmployee?.id === employee.id ? (
+                      <select
+                        className="rounded-md border border-input bg-background px-2 py-1"
+                        value={editingEmployee.membershipLevel}
+                        onChange={e => setEditingEmployee({...editingEmployee, membershipLevel: e.target.value as MembershipLevel})}
+                      >
+                        <option value="BRONZE">Bronze</option>
+                        <option value="SILVER">Silver</option>
+                        <option value="GOLD">Gold</option>
+                        <option value="PLATINUM">Platinum</option>
+                      </select>
+                    ) : (
+                      <span className={`px-2 py-1 rounded-md inline-block ${
+                        employee.membershipLevel === 'GOLD' ? 'bg-yellow-100 text-yellow-800' :
+                        employee.membershipLevel === 'SILVER' ? 'bg-gray-100 text-gray-800' :
+                        employee.membershipLevel === 'BRONZE' ? 'bg-orange-100 text-orange-800' :
+                        employee.membershipLevel === 'PLATINUM' ? 'bg-gray-900 text-white' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {employee.membershipLevel || 'BRONZE'}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       {editingEmployee?.id === employee.id ? (
