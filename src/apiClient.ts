@@ -25,6 +25,7 @@ class ApiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`, // Lisää Authorization-otsikko
           ...headers,
         },
         credentials: 'include',
@@ -32,6 +33,11 @@ class ApiClient {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          // Käsittele 401 Unauthorized -virhe
+          return { error: 'Unauthorized. Please log in again.' };
+        }
+
         const errorText = await response.text();
         let errorMessage;
         try {
@@ -72,10 +78,18 @@ class ApiClient {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`, // Lisää Authorization-otsikko
+        },
         body: formData,
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          // Käsittele 401 Unauthorized -virhe
+          return { error: 'Unauthorized. Please log in again.' };
+        }
+
         const errorText = await response.text();
         let errorMessage;
         try {
